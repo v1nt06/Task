@@ -56,5 +56,45 @@ namespace SampleQueries
                 Console.WriteLine($"Customer ID: {customer.CustomerID}; Total: {customer.Orders.Select(o => o.Total).Sum()}");
             }
         }
+
+        [Category("Join operators")]
+        [Title("Join - Task 1")]
+        [Description("Create list of suppliers where suppliers located in the same country and same city as customer's country and city")]
+        public void Linq2()
+        {
+            var customers = dataSource.Customers;
+            var suppliers = dataSource.Suppliers;
+
+            var result1 = customers.Join(suppliers, c => c.City, s => s.City, (c, s) => new {
+                CustomerId = c.CustomerID,
+                CustomerCity = c.City,
+                SupplierCity = s.City,
+                SupplierName = s.SupplierName
+            });
+
+            foreach (var element in result1)
+            {
+                Console.WriteLine($"{element.CustomerId} - {element.CustomerCity} - {element.SupplierCity} - {element.SupplierName}");
+            }
+
+            Console.WriteLine();
+
+            var result2 = customers.GroupJoin(suppliers, c => c.City, s => s.City, (c, s) => new {
+                CustomerId = c.CustomerID,
+                CustomerCity = c.City,
+                Suppliers = s
+            });
+
+            foreach (var element in result2)
+            {
+                Console.WriteLine($"{element.CustomerId} - {element.CustomerCity}:");
+                foreach (var supplier in element.Suppliers)
+                {
+                    Console.WriteLine($" {supplier.City} - {supplier.SupplierName}");
+                }
+            }
+        }
+
+
     }
 }
