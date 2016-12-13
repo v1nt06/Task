@@ -106,5 +106,17 @@ namespace SampleQueries
                 }
             }
         }
+
+        [Category("Ordering operators")]
+        [Title("OrderBy - Task 1")]
+        [Description("Show client list with date of first order")]
+        public void Linq4()
+        {
+            foreach (var customer in dataSource.Customers)
+            {
+                
+                Console.WriteLine($"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
+            }
+        }
     }
 }
