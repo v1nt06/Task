@@ -57,15 +57,27 @@ namespace SampleQueries
             }
         }
 
+        [Category("Restriction operators")]
+        [Title("Where - Task 2")]
+        [Description("Find all customers with orders where total bigger than X")]
+        public void Linq3()
+        {
+            var x = 2000;
+            var customers = dataSource.Customers.Where(c => c.Orders.Any(o => o.Total > x));
+
+            foreach (var customer in customers)
+            {
+                var order = customer.Orders.First(o => o.Total > x);
+                Console.WriteLine($"{customer.CustomerID}: OrderId: {order.OrderID} - Total: {order.Total}");
+            }
+        }
+
         [Category("Join operators")]
         [Title("Join - Task 1")]
         [Description("Create list of suppliers where suppliers located in the same country and same city as customer's country and city")]
         public void Linq2()
         {
-            var customers = dataSource.Customers;
-            var suppliers = dataSource.Suppliers;
-
-            var result1 = customers.Join(suppliers, c => c.City, s => s.City, (c, s) => new {
+            var result1 = dataSource.Customers.Join(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new {
                 CustomerId = c.CustomerID,
                 CustomerCity = c.City,
                 SupplierCity = s.City,
@@ -79,7 +91,7 @@ namespace SampleQueries
 
             Console.WriteLine();
 
-            var result2 = customers.GroupJoin(suppliers, c => c.City, s => s.City, (c, s) => new {
+            var result2 = dataSource.Customers.GroupJoin(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new {
                 CustomerId = c.CustomerID,
                 CustomerCity = c.City,
                 Suppliers = s
@@ -94,7 +106,5 @@ namespace SampleQueries
                 }
             }
         }
-
-
     }
 }
