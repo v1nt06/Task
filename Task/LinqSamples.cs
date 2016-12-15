@@ -91,7 +91,8 @@ namespace SampleQueries
         [Description("Create list of suppliers where suppliers located in the same country and same city as customer's country and city")]
         public void Linq2()
         {
-            var result1 = dataSource.Customers.Join(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new {
+            var result1 = dataSource.Customers.Join(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new
+            {
                 CustomerId = c.CustomerID,
                 CustomerCity = c.City,
                 SupplierCity = s.City,
@@ -105,7 +106,8 @@ namespace SampleQueries
 
             Console.WriteLine();
 
-            var result2 = dataSource.Customers.GroupJoin(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new {
+            var result2 = dataSource.Customers.GroupJoin(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new
+            {
                 CustomerId = c.CustomerID,
                 CustomerCity = c.City,
                 Suppliers = s
@@ -160,6 +162,26 @@ namespace SampleQueries
             {
                 var dateOfFirstOrder = customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate;
                 Console.WriteLine($"{customer.CustomerID} - {dateOfFirstOrder}");
+            }
+        }
+
+        [Category("Grouping operators")]
+        [Title("GroupBy - Task 1")]
+        [Description("Group products by category, then by units count, then last group sort by price")]
+        public void Linq7()
+        {
+            var result =
+                dataSource.Products.GroupBy(p => p.Category)
+                    .Take(dataSource.Products.GroupBy(p => p.Category).Count() - 1)
+                    .Select(g => g.OrderBy(p => p.UnitsInStock))
+                    .Union(new List<IOrderedEnumerable<Product>>
+                    {
+                        dataSource.Products.GroupBy(p => p.Category).Last().OrderBy(p => p.UnitPrice)
+                    });
+
+            foreach (var product in result.SelectMany(element => element))
+            {
+                Console.WriteLine($"{product.ProductName} - {product.Category} - {product.UnitsInStock} - {product.UnitPrice}");
             }
         }
     }
