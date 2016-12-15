@@ -114,8 +114,38 @@ namespace SampleQueries
         {
             foreach (var customer in dataSource.Customers)
             {
-                
                 Console.WriteLine($"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
+            }
+        }
+
+        [Category("Ordering operators")]
+        [Title("OrderBy - Task 2")]
+        [Description("Show client list with date of the first order ordered by: date, total sum, client")]
+        public void Linq5()
+        {
+            var customers = dataSource.Customers.OrderByDescending(c => c.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate);
+            Console.WriteLine("Sorted by date of first order:");
+            foreach (var customer in customers)
+            {
+                Console.WriteLine($"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Sorted by total sum:");
+            customers = dataSource.Customers.OrderByDescending(c => c.Orders.Select(o => o.Total).Sum());
+            foreach (var customer in customers)
+            {
+                var dateOfFirstOrder = customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate;
+                Console.WriteLine($"{customer.CustomerID} - {dateOfFirstOrder} - {customer.Orders.Select(o => o.Total).Sum()}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Sorted by client");
+            customers = dataSource.Customers.OrderByDescending(c => c.CustomerID);
+            foreach (var customer in customers)
+            {
+                var dateOfFirstOrder = customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate;
+                Console.WriteLine($"{customer.CustomerID} - {dateOfFirstOrder}");
             }
         }
     }
