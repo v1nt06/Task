@@ -72,6 +72,20 @@ namespace SampleQueries
             }
         }
 
+        [Category("Restriction operators")]
+        [Title("Where - Task 3")]
+        [Description("Show clients without code or without region or without code of phone number")]
+        public void Linq6()
+        {
+            var customers = dataSource.Customers.Where(c => string.IsNullOrWhiteSpace(c.CustomerID) || string.IsNullOrWhiteSpace(c.Region)
+                || !c.Phone.StartsWith("("));
+
+            foreach (var customer in customers)
+            {
+                Console.WriteLine($"{customer.CustomerID} - {customer.Region} - {customer.Phone}");
+            }
+        }
+
         [Category("Join operators")]
         [Title("Join - Task 1")]
         [Description("Create list of suppliers where suppliers located in the same country and same city as customer's country and city")]
