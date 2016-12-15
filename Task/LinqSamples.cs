@@ -184,5 +184,29 @@ namespace SampleQueries
                 Console.WriteLine($"{product.ProductName} - {product.Category} - {product.UnitsInStock} - {product.UnitPrice}");
             }
         }
+
+        [Category("Grouping operators")]
+        [Title("GroupBy - Task 2")]
+        [Description("Group products by 3 groups: cheap, normal, costy")]
+        public void Linq8()
+        {
+            var result = dataSource.Products.GroupBy(p =>
+            {
+                if (p.UnitPrice < 10)
+                {
+                    return "cheap";
+                }
+
+                return p.UnitPrice < 20 ? "normal" : "costy";
+            });
+
+            foreach (var element in result)
+            {
+                foreach (var product in element)
+                {
+                    Console.WriteLine($"{product.ProductName} - {product.UnitPrice} - {element.Key}");
+                }
+            }
+        }
     }
 }
