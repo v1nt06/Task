@@ -35,7 +35,8 @@ namespace SampleQueries
             Console.WriteLine($"Customers with total > {x}");
             foreach (var customer in customers)
             {
-                Console.WriteLine($"Customer ID: {customer.CustomerID}; Total: {customer.Orders.Select(o => o.Total).Sum()}");
+                Console.WriteLine(
+                    $"Customer ID: {customer.CustomerID}; Total: {customer.Orders.Select(o => o.Total).Sum()}");
             }
             Console.WriteLine();
 
@@ -44,7 +45,8 @@ namespace SampleQueries
             Console.WriteLine($"Customers with total > {x}");
             foreach (var customer in customers)
             {
-                Console.WriteLine($"Customer ID: {customer.CustomerID}; Total: {customer.Orders.Select(o => o.Total).Sum()}");
+                Console.WriteLine(
+                    $"Customer ID: {customer.CustomerID}; Total: {customer.Orders.Select(o => o.Total).Sum()}");
             }
             Console.WriteLine();
 
@@ -53,7 +55,8 @@ namespace SampleQueries
             Console.WriteLine($"Customers with total > {x}");
             foreach (var customer in customers)
             {
-                Console.WriteLine($"Customer ID: {customer.CustomerID}; Total: {customer.Orders.Select(o => o.Total).Sum()}");
+                Console.WriteLine(
+                    $"Customer ID: {customer.CustomerID}; Total: {customer.Orders.Select(o => o.Total).Sum()}");
             }
         }
 
@@ -77,8 +80,10 @@ namespace SampleQueries
         [Description("Show clients without code or without region or without code of phone number")]
         public void Linq6()
         {
-            var customers = dataSource.Customers.Where(c => string.IsNullOrWhiteSpace(c.CustomerID) || string.IsNullOrWhiteSpace(c.Region)
-                || !c.Phone.StartsWith("("));
+            var customers =
+                dataSource.Customers.Where(
+                    c => string.IsNullOrWhiteSpace(c.CustomerID) || string.IsNullOrWhiteSpace(c.Region)
+                         || !c.Phone.StartsWith("("));
 
             foreach (var customer in customers)
             {
@@ -88,7 +93,9 @@ namespace SampleQueries
 
         [Category("Join operators")]
         [Title("Join - Task 1")]
-        [Description("Create list of suppliers where suppliers located in the same country and same city as customer's country and city")]
+        [Description(
+            "Create list of suppliers where suppliers located in the same country and same city as customer's country and city"
+            )]
         public void Linq2()
         {
             var result1 = dataSource.Customers.Join(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new
@@ -96,12 +103,13 @@ namespace SampleQueries
                 CustomerId = c.CustomerID,
                 CustomerCity = c.City,
                 SupplierCity = s.City,
-                SupplierName = s.SupplierName
+                s.SupplierName
             });
 
             foreach (var element in result1)
             {
-                Console.WriteLine($"{element.CustomerId} - {element.CustomerCity} - {element.SupplierCity} - {element.SupplierName}");
+                Console.WriteLine(
+                    $"{element.CustomerId} - {element.CustomerCity} - {element.SupplierCity} - {element.SupplierName}");
             }
 
             Console.WriteLine();
@@ -130,7 +138,8 @@ namespace SampleQueries
         {
             foreach (var customer in dataSource.Customers)
             {
-                Console.WriteLine($"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
+                Console.WriteLine(
+                    $"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
             }
         }
 
@@ -139,11 +148,14 @@ namespace SampleQueries
         [Description("Show client list with date of the first order ordered by: date, total sum, client")]
         public void Linq5()
         {
-            var customers = dataSource.Customers.OrderByDescending(c => c.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate);
+            var customers =
+                dataSource.Customers.OrderByDescending(
+                    c => c.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate);
             Console.WriteLine("Sorted by date of first order:");
             foreach (var customer in customers)
             {
-                Console.WriteLine($"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
+                Console.WriteLine(
+                    $"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
             }
 
             Console.WriteLine();
@@ -152,7 +164,8 @@ namespace SampleQueries
             foreach (var customer in customers)
             {
                 var dateOfFirstOrder = customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate;
-                Console.WriteLine($"{customer.CustomerID} - {dateOfFirstOrder} - {customer.Orders.Select(o => o.Total).Sum()}");
+                Console.WriteLine(
+                    $"{customer.CustomerID} - {dateOfFirstOrder} - {customer.Orders.Select(o => o.Total).Sum()}");
             }
 
             Console.WriteLine();
@@ -181,7 +194,8 @@ namespace SampleQueries
 
             foreach (var product in result.SelectMany(element => element))
             {
-                Console.WriteLine($"{product.ProductName} - {product.Category} - {product.UnitsInStock} - {product.UnitPrice}");
+                Console.WriteLine(
+                    $"{product.ProductName} - {product.Category} - {product.UnitsInStock} - {product.UnitPrice}");
             }
         }
 
@@ -206,6 +220,39 @@ namespace SampleQueries
                 {
                     Console.WriteLine($"{product.ProductName} - {product.UnitPrice} - {element.Key}");
                 }
+            }
+        }
+
+        [Category("Conversion operators")]
+        [Title("ToDictionary - Task 1")]
+        [Description("Calculate average profit and average intensity for every city")]
+        public void Linq9()
+        {
+            var averages = dataSource.Customers.Select(c => c.City)
+                .Distinct()
+                .ToDictionary(city => city,
+                    city =>
+                        dataSource.Customers.Where(c => c.City == city).SelectMany(c => c.Orders).Average(o => o.Total));
+
+            Console.WriteLine("Average profit per city:");
+            foreach (var average in averages)
+            {
+                Console.WriteLine($"{average.Key} - {average.Value:C}");
+            }
+
+            Console.WriteLine();
+
+            var intensities = dataSource.Customers.Select(c => c.City)
+                .Distinct()
+                .ToDictionary(city => city,
+                    city =>
+                        (float) dataSource.Customers.Where(c => c.City == city).SelectMany(c => c.Orders).Count()/
+                        dataSource.Customers.Count(c => c.City == city));
+
+            Console.WriteLine("Average intensity per city:");
+            foreach (var intensity in intensities)
+            {
+                Console.WriteLine($"{intensity.Key} - {intensity.Value:F}");
             }
         }
     }
