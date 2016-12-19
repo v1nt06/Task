@@ -246,13 +246,78 @@ namespace SampleQueries
                 .Distinct()
                 .ToDictionary(city => city,
                     city =>
-                        (float) dataSource.Customers.Where(c => c.City == city).SelectMany(c => c.Orders).Count()/
+                        (float)dataSource.Customers.Where(c => c.City == city).SelectMany(c => c.Orders).Count() /
                         dataSource.Customers.Count(c => c.City == city));
 
             Console.WriteLine("Average intensity per city:");
             foreach (var intensity in intensities)
             {
                 Console.WriteLine($"{intensity.Key} - {intensity.Value:F}");
+            }
+        }
+
+        [Category("Conversion operators")]
+        [Title("ToDictionary - Task 2")]
+        [Description("Show statistic about activity of clients by months, by years, by years and months")]
+        public void Linq10()
+        {
+            var ordersPerMonths =
+                dataSource.Customers.SelectMany(c => c.Orders)
+                    .Select(o => o.OrderDate.Month)
+                    .Distinct()
+                    .ToDictionary(month => month,
+                        month => dataSource.Customers.SelectMany(c => c.Orders).Count(o => o.OrderDate.Month == month))
+                    .OrderBy(o => o.Key);
+
+            Console.WriteLine("Count of orders per months:");
+            foreach (var ordersPerMonth in ordersPerMonths)
+            {
+                Console.WriteLine($"Month: {ordersPerMonth.Key}, Orders count: {ordersPerMonth.Value}");
+            }
+
+            Console.WriteLine();
+
+            var ordersPerYears =
+                dataSource.Customers.SelectMany(c => c.Orders)
+                    .Select(o => o.OrderDate.Year)
+                    .Distinct()
+                    .ToDictionary(year => year,
+                        year => dataSource.Customers.SelectMany(c => c.Orders).Count(o => o.OrderDate.Year == year))
+                    .OrderBy(o => o.Key);
+
+            Console.WriteLine("Count of orders per year:");
+            foreach (var ordersPerYear in ordersPerYears)
+            {
+                Console.WriteLine($"Year: {ordersPerYear.Key}, Orders count: {ordersPerYear.Value}");
+            }
+
+            Console.WriteLine();
+
+            var ordersPerMonthsPerYears =
+                dataSource.Customers.SelectMany(c => c.Orders)
+                    .Select(o => o.OrderDate.Year)
+                    .Distinct()
+                    .ToDictionary(year => year,
+                        year =>
+                            dataSource.Customers.SelectMany(c => c.Orders)
+                                .Where(o => o.OrderDate.Year == year)
+                                .Select(o => o.OrderDate.Month)
+                                .Distinct()
+                                .ToDictionary(month => month,
+                                    month =>
+                                        dataSource.Customers.SelectMany(c => c.Orders)
+                                            .Count(o => o.OrderDate.Year == year && o.OrderDate.Month == month))
+                                .OrderBy(o => o.Key))
+                    .OrderBy(o => o.Key);
+
+            Console.WriteLine("Count of orders per year per month:");
+            foreach (var ordersPerMonthsPerYear in ordersPerMonthsPerYears)
+            {
+                Console.WriteLine($"Year: {ordersPerMonthsPerYear.Key}");
+                foreach (var ordersPerMonthPerYear in ordersPerMonthsPerYear.Value)
+                {
+                    Console.WriteLine($"    Month: {ordersPerMonthPerYear.Key}, Orders count: {ordersPerMonthPerYear.Value}");
+                }
             }
         }
     }
