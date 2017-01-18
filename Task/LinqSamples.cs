@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using SampleSupport;
@@ -29,9 +30,9 @@ namespace SampleQueries
         [Description("List of all clients, whose total turnover exceeds some value X")]
         public void Linq1()
         {
-            var x = 10000;
-            var customers = dataSource.Customers.Where(c => c.Orders.Select(o => o.Total).Sum() > x);
+            var customers = GetCustomersWhoseByMinimumTurnover(10000);
 
+            var x = 10000;
             Console.WriteLine($"Customers with total > {x}");
             foreach (var customer in customers)
             {
@@ -41,7 +42,7 @@ namespace SampleQueries
             Console.WriteLine();
 
             x = 50000;
-            customers = dataSource.Customers.Where(c => c.Orders.Select(o => o.Total).Sum() > x);
+            customers = GetCustomersWhoseByMinimumTurnover(50000);
             Console.WriteLine($"Customers with total > {x}");
             foreach (var customer in customers)
             {
@@ -51,13 +52,18 @@ namespace SampleQueries
             Console.WriteLine();
 
             x = 100000;
-            customers = dataSource.Customers.Where(c => c.Orders.Select(o => o.Total).Sum() > x);
+            customers = GetCustomersWhoseByMinimumTurnover(100000);
             Console.WriteLine($"Customers with total > {x}");
             foreach (var customer in customers)
             {
                 Console.WriteLine(
                     $"Customer ID: {customer.CustomerID}; Total: {customer.Orders.Select(o => o.Total).Sum()}");
             }
+        }
+
+        private IEnumerable<Customer> GetCustomersWhoseByMinimumTurnover(int turnover)
+        {
+            return dataSource.Customers.Where(c => c.Orders.Select(o => o.Total).Sum() > turnover);
         }
 
         [Category("Restriction operators")]
@@ -80,14 +86,29 @@ namespace SampleQueries
         [Description("Show clients without code or without region or without code of phone number")]
         public void Linq6()
         {
-            var customers =
-                dataSource.Customers.Where(
-                    c => string.IsNullOrWhiteSpace(c.CustomerID) || string.IsNullOrWhiteSpace(c.Region)
-                         || !c.Phone.StartsWith("("));
+            var customers = dataSource.Customers.Where(c =>
+            {
+                if (!string.IsNullOrEmpty(c.PostalCode) && Regex.IsMatch(c.PostalCode, @"\D"))
+                {
+                    return true;
+                }
+
+                if (string.IsNullOrEmpty(c.Region))
+                {
+                    return true;
+                }
+
+                if (!string.IsNullOrEmpty(c.Phone) && !c.Phone.StartsWith("("))
+                {
+                    return true;
+                }
+
+                return false;
+            });
 
             foreach (var customer in customers)
             {
-                Console.WriteLine($"{customer.CustomerID} - {customer.Region} - {customer.Phone}");
+                Console.WriteLine($"{customer.CustomerID} - {customer.PostalCode} - {customer.Region} - {customer.Phone}");
             }
         }
 
@@ -98,36 +119,30 @@ namespace SampleQueries
             )]
         public void Linq2()
         {
-            var result1 = dataSource.Customers.Join(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new
-            {
-                CustomerId = c.CustomerID,
-                CustomerCity = c.City,
-                SupplierCity = s.City,
-                s.SupplierName
-            });
+            var result1 = dataSource.Customers.Join(dataSource.Suppliers, c => new { c.City, c.Country },
+                s => new { s.City, s.Country },
+                (c, s) =>
+                    new
+                    {
+                        CustomerId = c.CustomerID,
+                        CustomerCity = c.City,
+                        CustomerCountry = c.Country,
+                        s.SupplierName
+                    });
 
             foreach (var element in result1)
             {
                 Console.WriteLine(
-                    $"{element.CustomerId} - {element.CustomerCity} - {element.SupplierCity} - {element.SupplierName}");
+                    $"{element.CustomerId} - {element.CustomerCity} - {element.CustomerCountry} - {element.SupplierName}");
             }
 
             Console.WriteLine();
 
-            var result2 = dataSource.Customers.GroupJoin(dataSource.Suppliers, c => c.City, s => s.City, (c, s) => new
+            var result2 = result1.GroupBy(e => new { e.CustomerCountry, e.CustomerCity });
+            foreach (var element in result2.SelectMany(@group => @group))
             {
-                CustomerId = c.CustomerID,
-                CustomerCity = c.City,
-                Suppliers = s
-            });
-
-            foreach (var element in result2)
-            {
-                Console.WriteLine($"{element.CustomerId} - {element.CustomerCity}:");
-                foreach (var supplier in element.Suppliers)
-                {
-                    Console.WriteLine($" {supplier.City} - {supplier.SupplierName}");
-                }
+                Console.WriteLine(
+                    $"{element.CustomerCountry} - {element.CustomerCity} - {element.CustomerId} - {element.SupplierName}");
             }
         }
 
@@ -149,32 +164,17 @@ namespace SampleQueries
         public void Linq5()
         {
             var customers =
-                dataSource.Customers.OrderByDescending(
-                    c => c.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate);
-            Console.WriteLine("Sorted by date of first order:");
+                dataSource.Customers.OrderBy(c => c.Orders.OrderBy(o => o.OrderDate.Year).FirstOrDefault()?.OrderDate.Year)
+                    .ThenBy(c => c.Orders.OrderBy(o => o.OrderDate.Year).ThenBy(o => o.OrderDate.Month).FirstOrDefault()?.OrderDate.Month)
+                    .ThenByDescending(c => c.Orders.Sum(o => o.Total))
+                    .ThenBy(c => c.CustomerID);
             foreach (var customer in customers)
             {
-                Console.WriteLine(
-                    $"{customer.CustomerID} - {customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate}");
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Sorted by total sum:");
-            customers = dataSource.Customers.OrderByDescending(c => c.Orders.Select(o => o.Total).Sum());
-            foreach (var customer in customers)
-            {
-                var dateOfFirstOrder = customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate;
-                Console.WriteLine(
-                    $"{customer.CustomerID} - {dateOfFirstOrder} - {customer.Orders.Select(o => o.Total).Sum()}");
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Sorted by client");
-            customers = dataSource.Customers.OrderByDescending(c => c.CustomerID);
-            foreach (var customer in customers)
-            {
-                var dateOfFirstOrder = customer.Orders.OrderBy(o => o.OrderDate).FirstOrDefault()?.OrderDate;
-                Console.WriteLine($"{customer.CustomerID} - {dateOfFirstOrder}");
+                var year = customer.Orders.OrderBy(o => o.OrderDate.Year).FirstOrDefault()?.OrderDate.Year;
+                var month = customer.Orders.OrderBy(o => o.OrderDate.Year).FirstOrDefault()?.OrderDate.Month;
+                var total = customer.Orders.Sum(o => o.Total);
+                var customerId = customer.CustomerID;
+                Console.WriteLine($"{year} - {month} - {total} - {customerId}");
             }
         }
 
@@ -183,19 +183,24 @@ namespace SampleQueries
         [Description("Group products by category, then by units count, then last group sort by price")]
         public void Linq7()
         {
-            var result =
-                dataSource.Products.GroupBy(p => p.Category)
-                    .Take(dataSource.Products.GroupBy(p => p.Category).Count() - 1)
-                    .Select(g => g.OrderBy(p => p.UnitsInStock))
-                    .Union(new List<IOrderedEnumerable<Product>>
-                    {
-                        dataSource.Products.GroupBy(p => p.Category).Last().OrderBy(p => p.UnitPrice)
-                    });
+            var result = dataSource.Products.Select(p => new { p.Category, p.UnitsInStock, p.ProductName, Cost = p.UnitPrice * p.UnitsInStock })
+                .OrderBy(e => e.Cost)
+                .GroupBy(e => new { e.Category, e.UnitsInStock })
+                .OrderBy(g => g.Key.Category)
+                .ThenBy(g => g.Key.UnitsInStock)
+                .GroupBy(g => g.Key.Category);
 
-            foreach (var product in result.SelectMany(element => element))
+            foreach (var categoryGroup in result)
             {
-                Console.WriteLine(
-                    $"{product.ProductName} - {product.Category} - {product.UnitsInStock} - {product.UnitPrice}");
+                Console.WriteLine($"Category = {categoryGroup.Key}");
+                foreach (var unitsInStockGroup in categoryGroup)
+                {
+                    Console.WriteLine($"    UnitsInStock = {unitsInStockGroup.Key.UnitsInStock}");
+                    foreach (var element in unitsInStockGroup)
+                    {
+                        Console.WriteLine($"        ProductName = {element.ProductName}, Cost = {element.Cost}");
+                    }
+                }
             }
         }
 
